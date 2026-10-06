@@ -18,7 +18,13 @@ Invoke-WebRequest 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile 
 Expand-Archive "$work\Sysmon.zip" -DestinationPath "$work\Sysmon" -Force
 Invoke-WebRequest 'https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml' `
     -OutFile "$work\sysmonconfig.xml"
-& "$work\Sysmon\Sysmon64.exe" -accepteula -i "$work\sysmonconfig.xml"
+# Windows on ARM (e.g. a VM on an Apple Silicon Mac) needs the ARM64 build.
+$sysmonExe = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'Sysmon64a.exe' } else { 'Sysmon64.exe' }
+if (-not (Test-Path "$work\Sysmon\$sysmonExe")) {
+    throw "Couldn't find $sysmonExe in the Sysmon download. Check $work\Sysmon for the right binary."
+}
+Write-Host "    Using $sysmonExe ($env:PROCESSOR_ARCHITECTURE)"
+& "$work\Sysmon\$sysmonExe" -accepteula -i "$work\sysmonconfig.xml"
 
 Write-Host '[2/4] Enabling PowerShell script block logging' -ForegroundColor Cyan
 $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging'

@@ -2,18 +2,23 @@
 
 ![Detection CI](https://github.com/samyam2006/lolbin-detection-lab/actions/workflows/detections.yml/badge.svg)
 
-Detection engineering for **living-off-the-land binary (LOLBin) abuse** on Windows. Attackers increasingly avoid custom malware and instead misuse signed tools that ship with Windows, such as `certutil`, `mshta`, `rundll32` and `regsvr32`. This repo emulates eight of those techniques with [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team), captures the resulting [Sysmon](https://learn.microsoft.com/sysinternals/downloads/sysmon) telemetry, and ships tested [Sigma](https://sigmahq.io/) rules that detect them.
+I'm Samyam Shrestha, a senior at Towson University looking for full-time roles in cybersecurity and IT. I built this lab because I wanted to understand how attackers hide in normal Windows activity.
 
-What makes this more than a rule dump:
+A lot of real intrusions don't use custom malware. Attackers use tools that already ship with Windows, like `certutil`, `mshta` and `rundll32`. These programs are signed by Microsoft and run on ordinary machines every day, so seeing one run tells you almost nothing. The question is how to tell the malicious use apart from the normal use.
 
-- **Every rule is measured.** `scripts/evaluate.py` replays real attack logs and a benign baseline through each rule and reports the detection rate and false-positive count.
-- **Rules are tested like code.** GitHub Actions lints every rule, runs regression tests, and confirms each one still converts to Splunk SPL and Elastic queries on every push.
-- **Rules are hardened against evasion.** Each rule keys on `OriginalFileName` as well as the image path, so renaming the binary doesn't bypass it. Evasion attempts are documented per technique in [`docs/techniques/`](docs/techniques/).
-- **No SIEM required.** A small Sigma evaluator in [`scripts/sigma_lite.py`](scripts/sigma_lite.py) runs rules straight against `.evtx` files.
+I've worked with Splunk, PowerShell and Event Viewer before. For this project I wanted to go a step further: run the attacks myself in an isolated Windows VM, look at the raw [Sysmon](https://learn.microsoft.com/sysinternals/downloads/sysmon) logs they leave behind, write my own [Sigma](https://sigmahq.io/) detection rules, and then measure how many attacks each rule catches and how often it fires on normal activity.
+
+## Status
+
+🚧 **In progress.** The detection rules, the scoring script and the automated tests are built. Next, I'm running eight attack techniques from [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) in a Windows VM on my MacBook, recording a baseline of normal activity, and tuning the rules against both. I'll fill in the results and write up what I find for each technique as I go.
+
+## How it works
+
+Each rule targets one MITRE ATT&CK technique. `scripts/evaluate.py` runs every rule against the attack logs and the normal-activity logs, then reports which attacks it caught and how many false alarms it raised. `scripts/sigma_lite.py` is a small Sigma evaluator I use so I can test rules directly against `.evtx` files without a SIEM. On every push, GitHub Actions checks the rules for mistakes, runs the tests, and confirms each rule still converts to Splunk and Elastic queries.
 
 ## Results
 
-> Replace this section with your numbers after running the lab (see [results.md](results.md)).
+Pending. I'll add these once I've run the lab.
 
 | Technique | LOLBin | Rule | Detected | Benign FPs (before → after tuning) |
 |---|---|---|---|---|
@@ -26,7 +31,7 @@ What makes this more than a rule dump:
 | [T1053.005](https://attack.mitre.org/techniques/T1053/005/) Scheduled Task | schtasks | [rule](rules/windows/process_creation/proc_creation_win_schtasks_suspicious_create.yml) | ☐ | – |
 | [T1047](https://attack.mitre.org/techniques/T1047/) WMI | wmic | [rule](rules/windows/process_creation/proc_creation_win_wmic_process_create.yml) | ☐ | – |
 
-ATT&CK coverage map: load [`navigator/coverage_layer.json`](navigator/coverage_layer.json) into the [ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/). Add a screenshot here once your results are in.
+ATT&CK coverage map: load [`navigator/coverage_layer.json`](navigator/coverage_layer.json) into the [ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/).
 
 ## Repository layout
 
@@ -55,8 +60,8 @@ You need a computer with 16 GB of RAM (8 GB works, slowly), about 60 GB of free 
 
 ### Phase 1: Build the VM
 
-1. Install [VirtualBox](https://www.virtualbox.org/) or VMware Workstation Pro (free for personal use).
-2. Download the free **Windows 11 Enterprise evaluation** image from Microsoft and create a VM with 4 GB RAM, 2 CPUs and 60 GB disk.
+1. Install a hypervisor. On a Windows or Intel host, use [VirtualBox](https://www.virtualbox.org/) or VMware Workstation Pro. On an Apple Silicon Mac (what I used), use VMware Fusion or UTM, both free for personal use.
+2. Install Windows 11 and create a VM with 4 GB RAM, 2 CPUs and 60 GB disk. On Intel/AMD, use the free **Windows 11 Enterprise evaluation**. On Apple Silicon, use **Windows 11 ARM64**. The setup script picks the ARM64 build of Sysmon automatically.
 3. Set its network to **NAT**. Install the guest additions so you can share a folder with your host.
 4. Take a snapshot called `clean`.
 
