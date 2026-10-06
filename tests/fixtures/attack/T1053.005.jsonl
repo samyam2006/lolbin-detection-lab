@@ -1,0 +1,2 @@
+{"EventID": 1, "Image": "C:\\Windows\\System32\\schtasks.exe", "OriginalFileName": "schtasks.exe", "CommandLine": "schtasks.exe /create /tn \"LabUpdater\" /tr \"powershell.exe -w hidden -c Write-Host hi\" /sc onlogon /ru System", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}
+{"EventID": 1, "Image": "C:\\Windows\\System32\\schtasks.exe", "OriginalFileName": "schtasks.exe", "CommandLine": "schtasks /Create /SC ONCE /TN spawn /TR C:\\Users\\Public\\lab.exe /ST 20:10", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}

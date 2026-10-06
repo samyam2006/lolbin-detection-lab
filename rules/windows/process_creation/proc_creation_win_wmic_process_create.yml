@@ -1,0 +1,31 @@
+title: WMIC Spawning a Process (Local or Remote)
+id: c44963b4-7c17-46dc-961e-2bc1666ce362
+status: experimental
+description: |
+  Detects wmic.exe "process call create", which starts a process through WMI. The
+  new process is parented by WmiPrvSE.exe rather than the attacker's shell, which breaks
+  naive parent-child detections. With /node: it also executes on remote hosts.
+references:
+  - https://attack.mitre.org/techniques/T1047/
+  - https://lolbas-project.github.io/lolbas/Binaries/Wmic/
+author: Samyam Shrestha
+date: 2026-10-06
+tags:
+  - attack.execution
+  - attack.t1047
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    - Image|endswith: '\wmic.exe'
+    - OriginalFileName: 'wmic.exe'
+  selection_cli:
+    CommandLine|contains|all:
+      - 'process'
+      - 'call'
+      - 'create'
+  condition: all of selection_*
+falsepositives:
+  - Admin scripts that launch processes on remote machines with WMIC
+level: medium

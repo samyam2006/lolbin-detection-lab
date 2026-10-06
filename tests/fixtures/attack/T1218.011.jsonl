@@ -1,0 +1,2 @@
+{"EventID": 1, "Image": "C:\\Windows\\System32\\rundll32.exe", "OriginalFileName": "RUNDLL32.EXE", "CommandLine": "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication \";document.write();", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}
+{"EventID": 1, "Image": "C:\\Windows\\System32\\rundll32.exe", "OriginalFileName": "RUNDLL32.EXE", "CommandLine": "rundll32.exe C:\\Users\\Public\\lab.dll,StartW", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}

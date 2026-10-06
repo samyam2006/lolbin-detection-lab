@@ -1,0 +1,39 @@
+title: Rundll32 Proxy Execution of Script or DLL From User-Writable Path
+id: 162ce452-fb28-497d-b972-f02de713fefd
+status: experimental
+description: |
+  Detects rundll32.exe running inline JavaScript through mshtml, or loading a DLL
+  from a folder any user can write to (Temp, Public, AppData, ProgramData).
+  Common Control Panel launches are filtered out to keep noise down.
+references:
+  - https://attack.mitre.org/techniques/T1218/011/
+  - https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+author: Samyam Shrestha
+date: 2026-10-06
+tags:
+  - attack.defense-evasion
+  - attack.t1218.011
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    - Image|endswith: '\rundll32.exe'
+    - OriginalFileName: 'RUNDLL32.EXE'
+  selection_sus_script:
+    CommandLine|contains:
+      - 'javascript:'
+      - 'RunHTMLApplication'
+  selection_sus_path:
+    CommandLine|contains:
+      - '\AppData\Local\Temp\'
+      - '\Windows\Temp\'
+      - '\Users\Public\'
+      - '\ProgramData\'
+      - '\AppData\Roaming\'
+  filter_control_panel:
+    CommandLine|contains: 'shell32.dll,Control_RunDLL'
+  condition: selection_img and 1 of selection_sus_* and not filter_control_panel
+falsepositives:
+  - Software installers that unpack a helper DLL to Temp and invoke it with rundll32
+level: medium

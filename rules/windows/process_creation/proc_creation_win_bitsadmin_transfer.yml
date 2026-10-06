@@ -1,0 +1,33 @@
+title: Bitsadmin Job Created for Download or Persistence
+id: 7cddf477-a2cb-458e-812d-1425d9c51801
+status: experimental
+description: |
+  Detects bitsadmin.exe creating or configuring a BITS job. BITS jobs can download
+  payloads in the background and, via SetNotifyCmdLine, execute a program when the
+  job finishes, which gives attackers stealthy persistence.
+references:
+  - https://attack.mitre.org/techniques/T1197/
+  - https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/
+author: Samyam Shrestha
+date: 2026-10-06
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.t1197
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    - Image|endswith: '\bitsadmin.exe'
+    - OriginalFileName: 'bitsadmin.exe'
+  selection_cli:
+    CommandLine|contains:
+      - '/transfer'
+      - '/addfile'
+      - '/setnotifycmdline'
+      - '/create'
+  condition: all of selection_*
+falsepositives:
+  - Legacy software deployment scripts that still use bitsadmin
+level: medium

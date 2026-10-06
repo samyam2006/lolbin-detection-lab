@@ -1,0 +1,4 @@
+pyyaml>=6.0
+python-evtx>=0.8
+pytest>=8.0
+sigma-cli>=1.0

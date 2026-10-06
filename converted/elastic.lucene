@@ -1,0 +1,15 @@
+(process.executable.caseless:*\\bitsadmin.exe OR process.pe.original_file_name:bitsadmin.exe) AND (process.command_line:(*\/transfer* OR *\/addfile* OR *\/setnotifycmdline* OR *\/create*))
+
+(process.executable.caseless:*\\wmic.exe OR process.pe.original_file_name:wmic.exe) AND (process.command_line:*process* AND process.command_line:*call* AND process.command_line:*create*)
+
+(process.executable.caseless:*\\rundll32.exe OR process.pe.original_file_name:RUNDLL32.EXE) AND ((process.command_line:(*javascript\:* OR *RunHTMLApplication*)) OR (process.command_line:(*\\AppData\\Local\\Temp\\* OR *\\Windows\\Temp\\* OR *\\Users\\Public\\* OR *\\ProgramData\\* OR *\\AppData\\Roaming\\*))) AND (NOT process.command_line:*shell32.dll,Control_RunDLL*)
+
+((process.executable.caseless:(*\\powershell.exe OR *\\pwsh.exe)) OR (process.pe.original_file_name:(PowerShell.EXE OR pwsh.dll))) AND process.command_line:/(?i)\s[-\/]e(c|nc|nco|ncod|ncode|ncoded|ncodedc|ncodedco|ncodedcom|ncodedcomm|ncodedcomma|ncodedcomman|ncodedcommand)?\s+[A-Za-z0-9+\/=]{16,}/
+
+(process.executable.caseless:*\\regsvr32.exe OR process.pe.original_file_name:REGSVR32.EXE) AND (process.command_line:*scrobj.dll* OR (process.command_line:(*http\:\/\/* OR *https\:\/\/*)) OR process.command_line:*.sct*)
+
+(process.executable.caseless:*\\certutil.exe OR process.pe.original_file_name:CertUtil.exe) AND (process.command_line:(*urlcache* OR *verifyctl*)) AND (process.command_line:(*http\:\/\/* OR *https\:\/\/* OR *ftp\:\/\/*))
+
+(process.executable.caseless:*\\schtasks.exe OR process.pe.original_file_name:schtasks.exe) AND process.command_line:*\/create* AND (process.command_line:(*powershell* OR *pwsh* OR *cmd.exe\ \/c* OR *cmd\ \/c* OR *mshta* OR *wscript* OR *cscript* OR *rundll32* OR *regsvr32* OR *\\AppData\\* OR *\\Temp\\* OR *\\Users\\Public\\* OR *http\:\/\/* OR *https\:\/\/*))
+
+(process.executable.caseless:*\\mshta.exe OR process.pe.original_file_name:MSHTA.EXE) AND (process.command_line:(*javascript\:* OR *vbscript\:* OR *http\:\/\/* OR *https\:\/\/*))

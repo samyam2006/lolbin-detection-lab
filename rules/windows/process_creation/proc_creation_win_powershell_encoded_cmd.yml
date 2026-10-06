@@ -1,0 +1,31 @@
+title: PowerShell Launched With Encoded Command
+id: 4d85d567-545c-4996-afce-806e537e51e5
+status: experimental
+description: |
+  Detects powershell.exe or pwsh.exe started with -EncodedCommand (or a short form).
+  Base64-encoding the command hides it from casual inspection and simple string matching.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+author: Samyam Shrestha
+date: 2026-10-06
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    - Image|endswith:
+        - '\powershell.exe'
+        - '\pwsh.exe'
+    - OriginalFileName:
+        - 'PowerShell.EXE'
+        - 'pwsh.dll'
+  selection_cli:
+    # PowerShell accepts any unambiguous prefix of -EncodedCommand, and both - and /
+    CommandLine|re: '(?i)\s[-/]e(c|nc|nco|ncod|ncode|ncoded|ncodedc|ncodedco|ncodedcom|ncodedcomm|ncodedcomma|ncodedcomman|ncodedcommand)?\s+[A-Za-z0-9+/=]{16,}'
+  condition: all of selection_*
+falsepositives:
+  - Management agents (SCCM, some RMM tools) that pass encoded commands
+level: medium

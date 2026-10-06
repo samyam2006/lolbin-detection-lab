@@ -1,0 +1,33 @@
+title: Regsvr32 Loading Scriptlet or Remote Content (Squiblydoo)
+id: 7e3abc1f-8e42-40c7-86b1-deb5c1e291e3
+status: experimental
+description: |
+  Detects regsvr32.exe being used to execute a COM scriptlet via scrobj.dll or to
+  load content from a URL, a technique known as "Squiblydoo".
+references:
+  - https://attack.mitre.org/techniques/T1218/010/
+  - https://lolbas-project.github.io/lolbas/Binaries/Regsvr32/
+author: Samyam Shrestha
+date: 2026-10-06
+tags:
+  - attack.defense-evasion
+  - attack.t1218.010
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_img:
+    - Image|endswith: '\regsvr32.exe'
+    - OriginalFileName: 'REGSVR32.EXE'
+  selection_cli_scrobj:
+    CommandLine|contains: 'scrobj.dll'
+  selection_cli_remote:
+    CommandLine|contains:
+      - 'http://'
+      - 'https://'
+  selection_cli_sct:
+    CommandLine|contains: '.sct'
+  condition: selection_img and 1 of selection_cli_*
+falsepositives:
+  - Unlikely
+level: high

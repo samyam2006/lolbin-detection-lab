@@ -1,0 +1,16 @@
+EventID=1 Image="*\\bitsadmin.exe" OR OriginalFileName="bitsadmin.exe" CommandLine IN ("*/transfer*", "*/addfile*", "*/setnotifycmdline*", "*/create*")
+
+EventID=1 Image="*\\wmic.exe" OR OriginalFileName="wmic.exe" CommandLine="*process*" CommandLine="*call*" CommandLine="*create*"
+
+EventID=1 Image="*\\rundll32.exe" OR OriginalFileName="RUNDLL32.EXE" CommandLine IN ("*javascript:*", "*RunHTMLApplication*") OR CommandLine IN ("*\\AppData\\Local\\Temp\\*", "*\\Windows\\Temp\\*", "*\\Users\\Public\\*", "*\\ProgramData\\*", "*\\AppData\\Roaming\\*") NOT CommandLine="*shell32.dll,Control_RunDLL*"
+
+EventID=1 Image IN ("*\\powershell.exe", "*\\pwsh.exe") OR OriginalFileName IN ("PowerShell.EXE", "pwsh.dll")
+| regex CommandLine="(?i)\\s[-/]e(c|nc|nco|ncod|ncode|ncoded|ncodedc|ncodedco|ncodedcom|ncodedcomm|ncodedcomma|ncodedcomman|ncodedcommand)?\\s+[A-Za-z0-9+/=]{16,}"
+
+EventID=1 Image="*\\regsvr32.exe" OR OriginalFileName="REGSVR32.EXE" CommandLine="*scrobj.dll*" OR CommandLine IN ("*http://*", "*https://*") OR CommandLine="*.sct*"
+
+EventID=1 Image="*\\certutil.exe" OR OriginalFileName="CertUtil.exe" CommandLine IN ("*urlcache*", "*verifyctl*") CommandLine IN ("*http://*", "*https://*", "*ftp://*")
+
+EventID=1 Image="*\\schtasks.exe" OR OriginalFileName="schtasks.exe" CommandLine="*/create*" CommandLine IN ("*powershell*", "*pwsh*", "*cmd.exe /c*", "*cmd /c*", "*mshta*", "*wscript*", "*cscript*", "*rundll32*", "*regsvr32*", "*\\AppData\\*", "*\\Temp\\*", "*\\Users\\Public\\*", "*http://*", "*https://*")
+
+EventID=1 Image="*\\mshta.exe" OR OriginalFileName="MSHTA.EXE" CommandLine IN ("*javascript:*", "*vbscript:*", "*http://*", "*https://*")

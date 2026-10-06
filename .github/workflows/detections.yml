@@ -1,0 +1,40 @@
+name: Detection CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint rules
+        run: python scripts/validate_rules.py
+
+      - name: Unit and regression tests
+        run: pytest -q
+
+      - name: Score rules against fixtures
+        run: |
+          python scripts/evaluate.py --strict \
+            --attack tests/fixtures/attack --benign tests/fixtures/benign \
+            --markdown fixture-results.md
+          cat fixture-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check rules convert to Splunk and Elastic
+        run: |
+          sigma plugin install splunk
+          sigma plugin install elasticsearch
+          sigma plugin install sysmon
+          sigma convert -t splunk -p sysmon rules/ > /dev/null
+          sigma convert -t lucene -p ecs_windows rules/ > /dev/null
