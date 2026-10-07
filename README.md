@@ -22,14 +22,14 @@ The full troubleshooting story, including the wrong theories, is in [docs/build-
 
 | Technique | LOLBin | My lab (Atomic Red Team) | Public data (Splunk attack_data) | False positives |
 |---|---|---|---|---|
-| [T1047](https://attack.mitre.org/techniques/T1047/) WMI | wmic | ✅ detected (after fixing Sysmon logging) | ✅ detected | 0 |
-| [T1053.005](https://attack.mitre.org/techniques/T1053/005/) Scheduled Task | schtasks | ✅ detected, 3/3 task creations after v2 tuning | – | 0 |
-| [T1059.001](https://attack.mitre.org/techniques/T1059/001/) PowerShell | powershell | ✅ detected | – | 0 |
-| [T1105](https://attack.mitre.org/techniques/T1105/) Ingress Tool Transfer | certutil | 🛡️ blocked by Defender | ✅ detected | 0 |
-| [T1197](https://attack.mitre.org/techniques/T1197/) BITS Jobs | bitsadmin | ✅ detected | – | 0 |
-| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) Mshta | mshta | 🛡️ blocked by Defender | ✅ detected, 4 → 23 hits after v2 tuning | 0 |
-| [T1218.010](https://attack.mitre.org/techniques/T1218/010/) Regsvr32 | regsvr32 | ✅ local scriptlet detected (remote one blocked by Defender) | ✅ detected | 0 |
-| [T1218.011](https://attack.mitre.org/techniques/T1218/011/) Rundll32 | rundll32 | 🛡️ blocked by Defender | ✅ detected | 0 |
+| [T1047](https://attack.mitre.org/techniques/T1047/) WMI | wmic | detected (after fixing Sysmon logging) | detected | 0 |
+| [T1053.005](https://attack.mitre.org/techniques/T1053/005/) Scheduled Task | schtasks | detected, 3/3 task creations after v2 tuning | – | 0 |
+| [T1059.001](https://attack.mitre.org/techniques/T1059/001/) PowerShell | powershell | detected | – | 0 |
+| [T1105](https://attack.mitre.org/techniques/T1105/) Ingress Tool Transfer | certutil | blocked by Defender | detected | 0 |
+| [T1197](https://attack.mitre.org/techniques/T1197/) BITS Jobs | bitsadmin | detected | – | 0 |
+| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) Mshta | mshta | blocked by Defender | detected, 4 → 23 hits after v2 tuning | 0 |
+| [T1218.010](https://attack.mitre.org/techniques/T1218/010/) Regsvr32 | regsvr32 | local scriptlet detected (remote one blocked by Defender) | detected | 0 |
+| [T1218.011](https://attack.mitre.org/techniques/T1218/011/) Rundll32 | rundll32 | blocked by Defender | detected | 0 |
 
 "Blocked by Defender" means `Get-MpThreatDetection` showed Defender stopping the command at launch, so the LOLBin never ran and there was nothing for a detection rule to see. Raw output: [results.md](results.md) (my lab) and [results-public.md](results-public.md) (public data).
 
@@ -91,7 +91,7 @@ python scripts/evaluate.py --attack evtx/public --markdown results-public.md --j
 python scripts/build_navigator.py
 ```
 
-> ⚠️ Atomic Red Team simulates real attacker behaviour. Only run it in a VM you can throw away, never on a personal or work machine.
+> Atomic Red Team simulates real attacker behaviour. Only run it in a VM you can throw away, never on a personal or work machine.
 
 ## Limitations and next steps
 
