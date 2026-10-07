@@ -99,11 +99,11 @@ A running record of the problems I hit while building this lab and how I solved 
 
 **WMIC process creation not logged**
 - *Symptom:* `wmic os get caption` ran successfully, but no Sysmon Event ID 1 appeared for `WMIC.exe`, even after switching from sysmon-modular's "balanced" profile to "excludes-only".
-- *Clue:* `(Get-Item C:\Windows\System32\wbem\WMIC.exe).VersionInfo.OriginalFilename` returns **`wmic.exe.mui`**, not `wmic.exe`.
-- *Likely cause:* The balanced profile only logs WMIC through an include rule, `OriginalFileName is wmic.exe`. If Sysmon also reads `wmic.exe.mui`, that rule never matches, so every WMIC launch gets silently dropped.
+- *First theory (wrong):* `(Get-Item ...WMIC.exe).VersionInfo.OriginalFilename` returned `wmic.exe.mui`, so I suspected Sysmon saw a different internal name. But once WMIC was logged, Sysmon reported `OriginalFileName: wmic.exe`, which ruled that out.
+- *Actual cause:* Reading the balanced profile's XML, all three of its WMIC include rules are `groupRelation="and"` rules that pair `OriginalFileName is wmic.exe` with a specific command line: `useraccount;call;create`, `service;call;create` or `delete;shadowcopy`. WMIC is only logged in those contexts. `wmic process call create`, the exact technique I'm testing, isn't one of them.
 - *Second problem:* After switching to the "excludes-only" profile, Sysmon logged **no** process creations at all, not even `cmd.exe`, so I went back to balanced.
-- *Fix:* Balanced profile plus one extra include rule matching on the image path (`Image end with \WMIC.exe`), which doesn't depend on the version resource.
-- *Lesson:* Matching on `OriginalFileName` is great for catching renamed binaries, but it relies on what's in the PE version resource, and that isn't always the plain file name. Verify a config actually logs the binaries you care about. Don't assume it does because a rule mentions them.
+- *Fix:* Balanced profile plus one extra include rule, `Image end with \WMIC.exe`, so every WMIC launch is logged. After rerunning T1047, Sysmon captured `WMIC.exe` (parent `cmd.exe`) running `process call create notepad.exe`, and my rule detected it.
+- *Lessons:* (1) A tuned Sysmon config is a set of decisions about what *not* to see. Verify it actually logs the behaviour your detections depend on. (2) My first theory was wrong, and testing it is what found the real cause.
 
 **Previous technique's events leaked into the next log**
 - *Symptom:* Each log started with the previous technique's export and cleanup commands, even though the script clears the Sysmon log between techniques.

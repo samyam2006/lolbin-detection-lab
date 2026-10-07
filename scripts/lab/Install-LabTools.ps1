@@ -20,9 +20,9 @@ Write-Host '[1/4] Installing Sysmon' -ForegroundColor Cyan
 Invoke-WebRequest 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile "$work\Sysmon.zip" -UseBasicParsing
 Expand-Archive "$work\Sysmon.zip" -DestinationPath "$work\Sysmon" -Force
 # sysmon-modular ships merged configs as release assets. I use the "balanced" profile
-# plus one extra include: its WMIC rule matches OriginalFileName "wmic.exe", but WMIC's
-# version resource reports "wmic.exe.mui", so WMIC launches were silently not logged
-# (see docs/build-log.md). The "excludes-only" profile logged nothing at all in testing.
+# plus one extra include: balanced only logs WMIC alongside specific command lines
+# (user/service creation, shadow copy deletion), so "wmic process call create" was
+# silently dropped (see docs/build-log.md). "excludes-only" logged nothing in testing.
 Invoke-WebRequest 'https://github.com/olafhartong/sysmon-modular/releases/latest/download/sysmonconfig.xml' `
     -OutFile "$work\sysmonconfig-balanced.xml" -UseBasicParsing
 $extra = '<RuleGroup name="lab-wmic" groupRelation="or"><ProcessCreate onmatch="include"><Image condition="end with">\WMIC.exe</Image></ProcessCreate></RuleGroup>'
