@@ -65,7 +65,11 @@ foreach ($t in $Plan.Keys) {
     Invoke-AtomicTest $t -TestNumbers $tests -GetPrereqs
 
     Write-Host '[2/5] Clearing Sysmon log'
+    # Let Sysmon flush events from the previous technique's cleanup first;
+    # otherwise they land in this technique's export after the clear.
+    Start-Sleep -Seconds 5
     wevtutil cl $SysmonLog
+    Start-Sleep -Seconds 2
 
     Write-Host '[3/5] Running test(s)'
     Invoke-AtomicTest $t -TestNumbers $tests -TimeoutSeconds 120

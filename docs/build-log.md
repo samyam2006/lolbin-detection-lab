@@ -79,6 +79,33 @@ A running record of the problems I hit while building this lab and how I solved 
 - *Problem:* Each technique has many atomic tests (T1105 alone has 30+). Some test unrelated tools (curl, scp), some download real offensive tools (Mimikatz, BloodHound), and some wait for a password and would hang an unattended run.
 - *Fix:* Rewrote `Run-Atomics.ps1` to run a hand-picked list of test numbers per technique, chosen to exercise the LOLBin behaviour each rule targets. I avoided tests that pull in third-party offensive tooling.
 
+### First attack run (4 of 8 detected)
+
+**Four rules missed: certutil, mshta, rundll32, wmic**
+- *First check:* Inspected the process-creation events in each log with `scripts/inspect_log.py` before touching any rule.
+- *Finding:* The LOLBin process itself was absent from the logs. In T1047, Sysmon recorded `cmd.exe /c wmic process call create notepad.exe` and the resulting `notepad.exe` (parent `WmiPrvSE.exe`), so WMIC clearly ran, but there was no event for `wmic.exe` itself. The T1105 log had no certutil activity at all, and the T1218.011 log only had `cmd.exe /c` with an empty command.
+- *Diagnosis:* Ran each LOLBin by hand in a harmless way (`wmic os get caption`, `certutil -?`, `mshta about:blank`, `rundll32 shell32.dll,Control_RunDLL`) and queried Sysmon for the process events:
+  - `certutil.exe`, `mshta.exe` and `rundll32.exe` **were** logged, so Sysmon can see them.
+  - `WMIC.exe` was **not** logged, even though the command ran. The sysmon-modular "balanced" profile I installed filters out WMIC process creation. **That's a telemetry gap, not a rule gap.**
+  - Running the certutil atomic on its own failed with `Exception calling "Start"... "Access is denied"`. Atomic Red Team couldn't even launch the test command, so the certutil (and likely rundll32) tests never ran.
+- *Confirmed with Defender's detection history* (`Get-MpThreatDetection`): Microsoft Defender blocked the certutil (`-urlcache` and `-verifyctl`), mshta (inline JavaScript and VBScript), rundll32 (JavaScript and VBScript via `mshtml,RunHTMLApplication`) and remote regsvr32 scriptlet commands. It blocked them at the `cmd.exe` launch, which is why Atomic Red Team reported "Access is denied" and why the LOLBin processes never appeared in Sysmon.
+- *Lesson:* A rule miss isn't automatically a rule problem. Confirm the telemetry exists before tuning detection logic. Here, one miss was a logging-config gap and the others were attacks that prevention stopped before they could run.
+- *Takeaway:* Detection and prevention are separate layers. Defender stopped these known LOLBin patterns outright, but my rules exist for the cases prevention misses, such as new variants or hosts without Defender.
+
+**Testing the rules where prevention blocked the attack**
+- *Decision:* I kept Defender on rather than weakening the lab's protection. To still test the four affected rules against real attack telemetry, I added Splunk's public [attack_data](https://github.com/splunk/attack_data) Sysmon logs (recorded from Atomic Red Team runs) for T1105, T1218.005, T1218.010, T1218.011 and T1047.
+- *Change:* Extended `sigma_lite.py` to read Splunk's one-XML-event-per-line `.log` format, and added `scripts/fetch_public_data.sh` to download the datasets.
+- Results from my own lab and from the public data are reported separately, so it's always clear which evidence came from where.
+
+**WMIC process creation not logged**
+- *Symptom:* `wmic os get caption` ran successfully, but no Sysmon Event ID 1 appeared for `WMIC.exe`, even after switching from sysmon-modular's "balanced" profile to "excludes-only".
+- *Status:* Still investigating. Neither config profile has an exclusion that mentions WMIC, so the cause is somewhere else.
+
+**Previous technique's events leaked into the next log**
+- *Symptom:* Each log started with the previous technique's export and cleanup commands, even though the script clears the Sysmon log between techniques.
+- *Cause:* Events generated just before the clear were still being written when `wevtutil cl` ran.
+- *Fix:* Added short pauses before and after clearing the log in `Run-Atomics.ps1`.
+
 ### Day-to-day operations
 
 **RDP stopped working the next day (error 0x704)**

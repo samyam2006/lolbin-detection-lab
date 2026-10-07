@@ -8,3 +8,4 @@ fixture-results.md
 Thumbs.db
 .Rhistory
 .Rhistory
+evtx/public/*.log

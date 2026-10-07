@@ -317,6 +317,32 @@ def _iter_jsonl(path: Path) -> Iterator[Event]:
             yield event
 
 
+def _xml_to_event(xml_text: str) -> Event | None:
+    from xml.etree import ElementTree as ET
+
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+    eid = root.find("e:System/e:EventID", _EVT_NS)
+    event: Event = {"EventID": int(eid.text) if eid is not None and eid.text else -1}
+    for data in root.findall("e:EventData/e:Data", _EVT_NS):
+        if data.get("Name"):
+            event[data.get("Name")] = data.text
+    return event
+
+
+def _iter_xml_lines(path: Path) -> Iterator[Event]:
+    """Splunk attack_data style: one <Event> XML document per line."""
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            line = line.strip()
+            if line.startswith("<Event"):
+                event = _xml_to_event(line)
+                if event is not None:
+                    yield event
+
+
 def iter_events(path: Path) -> Iterator[Event]:
     path = Path(path)
     suffix = path.suffix.lower()
@@ -324,8 +350,10 @@ def iter_events(path: Path) -> Iterator[Event]:
         yield from _iter_evtx(path)
     elif suffix in (".jsonl", ".ndjson"):
         yield from _iter_jsonl(path)
+    elif suffix in (".log", ".xml"):
+        yield from _iter_xml_lines(path)
     else:
-        raise SystemExit(f"Unsupported log format: {path} (use .evtx or .jsonl)")
+        raise SystemExit(f"Unsupported log format: {path} (use .evtx, .jsonl or .log)")
 
 
 def log_files(folder: Path) -> Iterable[Path]:
@@ -334,5 +362,5 @@ def log_files(folder: Path) -> Iterable[Path]:
         return []
     return sorted(
         p for p in folder.iterdir()
-        if p.is_file() and p.suffix.lower() in (".evtx", ".jsonl", ".ndjson")
+        if p.is_file() and p.suffix.lower() in (".evtx", ".jsonl", ".ndjson", ".log", ".xml")
     )
