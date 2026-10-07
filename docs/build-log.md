@@ -61,6 +61,35 @@ A running record of the problems I hit while building this lab and how I solved 
 **Accidental empty data disk**
 - A blank "create and attach new disk" row appeared on the Disks page. I discarded it without saving.
 
+### Lab tooling
+
+**Sysmon config download returned 404**
+- *Symptom:* `Invoke-WebRequest : 404: Not Found` when the setup script fetched `sysmonconfig.xml` from the sysmon-modular repo.
+- *Cause:* The sysmon-modular project stopped storing its prebuilt configs in the repository and now publishes them as GitHub Release assets.
+- *Fix:* Pointed the script at `https://github.com/olafhartong/sysmon-modular/releases/latest/download/sysmonconfig.xml`.
+- *Lesson:* Hardcoded URLs to third-party projects break. Pull from release assets, or pin a specific version.
+
+**Atomic Red Team install looked frozen**
+- *Symptom:* The setup script sat at "Installing Atomic Red Team" with no output.
+- *Cause:* It was waiting on a NuGet provider prompt that hadn't rendered yet. A fresh Windows Server has no NuGet provider, and PowerShellGet needs it to pull modules from the PowerShell Gallery.
+- *Fix:* Answered `Y`. The script now runs `Install-PackageProvider -Name NuGet -Force` up front, so the prompt never appears.
+- *Lesson:* Unattended scripts on fresh machines need their dependencies installed explicitly. Silent progress output can hide an interactive prompt.
+
+**Choosing which atomic tests to run**
+- *Problem:* Each technique has many atomic tests (T1105 alone has 30+). Some test unrelated tools (curl, scp), some download real offensive tools (Mimikatz, BloodHound), and some wait for a password and would hang an unattended run.
+- *Fix:* Rewrote `Run-Atomics.ps1` to run a hand-picked list of test numbers per technique, chosen to exercise the LOLBin behaviour each rule targets. I avoided tests that pull in third-party offensive tooling.
+
+### Day-to-day operations
+
+**RDP stopped working the next day (error 0x704)**
+- *Symptom:* Windows App reported "Unable to connect", error code 0x704, even though the VM showed as Running in Azure.
+- *Cause:* My public IP had changed since I locked the RDP rule to "My IP address", so the network security group was dropping my connection.
+- *Fix:* Updated the RDP inbound rule's source to my current IP.
+- *Lesson:* Restricting by source IP is a real security win, but it breaks whenever your IP changes. In production this is usually solved with a VPN, a bastion host (Azure Bastion), or just-in-time VM access instead of exposing RDP at all.
+
+**VM size ended up as D2s_v4, not B2as_v2**
+- The deployed VM is Standard_D2s_v4 (~$0.20/hour) instead of the cheaper B2as_v2 (~$0.09/hour) I'd planned. VM sizes can be changed after deployment, but only while the VM is stopped (deallocated).
+
 ### Hardening
 
 - Restricted the RDP (3389) inbound rule to **my IP address only**, instead of the default "Any", right after deployment.

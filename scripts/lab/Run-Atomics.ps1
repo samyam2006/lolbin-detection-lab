@@ -27,13 +27,13 @@ param(
     # Technique -> atomic test numbers to run. Edit after checking -ShowDetailsBrief.
     [System.Collections.IDictionary]$Plan = [ordered]@{
         'T1105'     = @(7, 8)      # certutil urlcache, certutil verifyctl
-        'T1197'     = @()          # fill in
-        'T1218.005' = @()          # fill in
-        'T1218.010' = @()          # fill in
-        'T1218.011' = @()          # fill in
-        'T1059.001' = @()          # fill in
-        'T1053.005' = @()          # fill in
-        'T1047'     = @()          # fill in
+        'T1197'     = @(1, 3)      # bitsadmin download, bitsadmin persist/download/execute
+        'T1218.005' = @(1, 2, 3)   # mshta javascript:, mshta vbscript:, mshta remote HTA
+        'T1218.010' = @(1, 2)      # regsvr32 local scriptlet, regsvr32 remote scriptlet
+        'T1218.011' = @(1, 2)      # rundll32 javascript:, rundll32 vbscript (RunHTMLApplication)
+        'T1059.001' = @(15, 17)    # -EncodedCommand variations, encoded command execution
+        'T1053.005' = @(1, 2)      # schtasks onlogon task, schtasks local task
+        'T1047'     = @(5)         # wmic process call create
     },
     [string[]]$Only,
     [string]$OutDir = (Join-Path $PSScriptRoot '..\..\evtx\attack'),

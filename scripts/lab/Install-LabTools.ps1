@@ -10,14 +10,18 @@
 #>
 #Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5.1 downloads are very slow with the progress bar on.
+$ProgressPreference = 'SilentlyContinue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $work = 'C:\LabTools'
 New-Item -ItemType Directory -Force -Path $work | Out-Null
 
 Write-Host '[1/4] Installing Sysmon' -ForegroundColor Cyan
-Invoke-WebRequest 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile "$work\Sysmon.zip"
+Invoke-WebRequest 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile "$work\Sysmon.zip" -UseBasicParsing
 Expand-Archive "$work\Sysmon.zip" -DestinationPath "$work\Sysmon" -Force
-Invoke-WebRequest 'https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml' `
-    -OutFile "$work\sysmonconfig.xml"
+# sysmon-modular now ships its merged configs as release assets, not repo files.
+Invoke-WebRequest 'https://github.com/olafhartong/sysmon-modular/releases/latest/download/sysmonconfig.xml' `
+    -OutFile "$work\sysmonconfig.xml" -UseBasicParsing
 # Windows on ARM (e.g. a VM on an Apple Silicon Mac) needs the ARM64 build.
 $sysmonExe = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'Sysmon64a.exe' } else { 'Sysmon64.exe' }
 if (-not (Test-Path "$work\Sysmon\$sysmonExe")) {
@@ -36,7 +40,15 @@ New-Item -ItemType Directory -Force -Path 'C:\AtomicRedTeam' | Out-Null
 Add-MpPreference -ExclusionPath 'C:\AtomicRedTeam'
 
 Write-Host '[4/4] Installing Atomic Red Team' -ForegroundColor Cyan
+# Atomic Red Team pulls a module from the PowerShell Gallery, which needs NuGet.
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 Invoke-Expression (Invoke-WebRequest 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing)
 Install-AtomicRedTeam -getAtomics -Force
+
+Write-Host "`nChecks:" -ForegroundColor Cyan
+Get-Service -Name 'Sysmon*' | Format-Table Name, Status -AutoSize
+$n = (Get-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -MaxEvents 50 -ErrorAction SilentlyContinue | Measure-Object).Count
+Write-Host "Sysmon events visible: $n (should be more than 0)"
+Write-Host "Atomics folder present: $(Test-Path 'C:\AtomicRedTeam\atomics\T1105')"
 
 Write-Host "`nSetup complete. Take a VM snapshot named 'tools-installed' now." -ForegroundColor Green
