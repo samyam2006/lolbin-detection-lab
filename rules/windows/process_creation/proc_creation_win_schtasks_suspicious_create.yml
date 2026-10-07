@@ -4,10 +4,14 @@ status: experimental
 description: |
   Detects schtasks.exe /create where the task action runs a script interpreter or a
   binary from a user-writable folder, a common persistence pattern.
+  v2: matches any task action that launches cmd.exe, not only "cmd.exe /c". Atomic
+  test T1053.005-2 created a task whose action was plain C:\windows\system32\cmd.exe,
+  which v1 missed.
 references:
   - https://attack.mitre.org/techniques/T1053/005/
 author: Samyam Shrestha
 date: 2026-10-06
+modified: 2026-10-07
 tags:
   - attack.persistence
   - attack.execution
@@ -25,7 +29,7 @@ detection:
     CommandLine|contains:
       - 'powershell'
       - 'pwsh'
-      - 'cmd.exe /c'
+      - 'cmd.exe'
       - 'cmd /c'
       - 'mshta'
       - 'wscript'

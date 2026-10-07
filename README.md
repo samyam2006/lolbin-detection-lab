@@ -4,151 +4,104 @@
 
 I'm Samyam Shrestha, a senior at Towson University looking for full-time roles in cybersecurity and IT. I built this lab because I wanted to understand how attackers hide in normal Windows activity.
 
-A lot of real intrusions don't use custom malware. Attackers use tools that already ship with Windows, like `certutil`, `mshta` and `rundll32`. These programs are signed by Microsoft and run on ordinary machines every day, so seeing one run tells you almost nothing. The question is how to tell the malicious use apart from the normal use.
+A lot of real intrusions don't use custom malware. Attackers use tools that already ship with Windows, like `certutil`, `mshta` and `rundll32`. They're signed by Microsoft and run on ordinary machines every day, so seeing one run tells you almost nothing. The real question is how to tell the malicious use apart from the normal use.
 
-I've worked with Splunk, PowerShell and Event Viewer before. For this project I wanted to go a step further: run the attacks myself in an isolated Windows VM, look at the raw [Sysmon](https://learn.microsoft.com/sysinternals/downloads/sysmon) logs they leave behind, write my own [Sigma](https://sigmahq.io/) detection rules, and then measure how many attacks each rule catches and how often it fires on normal activity.
+I'd used Splunk, PowerShell and Event Viewer before. Here I wanted to go further: run the attacks myself, read the raw [Sysmon](https://learn.microsoft.com/sysinternals/downloads/sysmon) logs they leave behind, write my own [Sigma](https://sigmahq.io/) detection rules, and measure how each rule does against both attacks and normal activity.
 
-## Status
+## What I found
 
-🚧 **In progress.** The detection rules, the scoring script and the automated tests are built. Next, I'm running eight attack techniques from [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) in a Windows VM on my MacBook, recording a baseline of normal activity, and tuning the rules against both. I'll fill in the results and write up what I find for each technique as I go.
+- **All 8 rules fired on real attack telemetry.** Five were confirmed in my own lab. The other three attacks were blocked by Microsoft Defender before they could run, so I validated those rules against public Sysmon datasets from Splunk's [attack_data](https://github.com/splunk/attack_data) project instead.
+- **0 false positives** against a normal-use baseline that included legitimate uses of four of the same tools: `certutil -hashfile`, `bitsadmin /list`, `wmic os get caption` and `schtasks /query`.
+- **Half my first-run "misses" weren't rule problems.** Defender blocked 7 attack commands outright, and my Sysmon config was silently dropping WMIC process creation. I fixed the logging gap and documented the prevention vs. detection difference instead of tuning rules to chase data that wasn't there.
+- **Two real tuning fixes.** The mshta rule missed an `.hta` run from the Startup folder, and the scheduled-task rule missed a task whose action was plain `cmd.exe`. Both are fixed and covered by regression tests.
+- **The renamed-binary hardening works on real data.** In the public mshta dataset, the attacker copied `mshta.exe` to `C:\Temp\notepad.exe`. My rule still caught it, because it checks the PE `OriginalFileName` and not just the file path.
 
-## How it works
-
-Each rule targets one MITRE ATT&CK technique. `scripts/evaluate.py` runs every rule against the attack logs and the normal-activity logs, then reports which attacks it caught and how many false alarms it raised. `scripts/sigma_lite.py` is a small Sigma evaluator I use so I can test rules directly against `.evtx` files without a SIEM. On every push, GitHub Actions checks the rules for mistakes, runs the tests, and confirms each rule still converts to Splunk and Elastic queries.
+The full troubleshooting story, including the wrong theories, is in [docs/build-log.md](docs/build-log.md).
 
 ## Results
 
-Pending. I'll add these once I've run the lab.
-
-| Technique | LOLBin | Rule | Detected | Benign FPs (before → after tuning) |
+| Technique | LOLBin | My lab (Atomic Red Team) | Public data (Splunk attack_data) | False positives |
 |---|---|---|---|---|
-| [T1105](https://attack.mitre.org/techniques/T1105/) Ingress Tool Transfer | certutil | [rule](rules/windows/process_creation/proc_creation_win_certutil_download.yml) | ☐ | – |
-| [T1197](https://attack.mitre.org/techniques/T1197/) BITS Jobs | bitsadmin | [rule](rules/windows/process_creation/proc_creation_win_bitsadmin_transfer.yml) | ☐ | – |
-| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) Mshta | mshta | [rule](rules/windows/process_creation/proc_creation_win_mshta_suspicious_exec.yml) | ☐ | – |
-| [T1218.010](https://attack.mitre.org/techniques/T1218/010/) Regsvr32 | regsvr32 | [rule](rules/windows/process_creation/proc_creation_win_regsvr32_squiblydoo.yml) | ☐ | – |
-| [T1218.011](https://attack.mitre.org/techniques/T1218/011/) Rundll32 | rundll32 | [rule](rules/windows/process_creation/proc_creation_win_rundll32_proxy_exec.yml) | ☐ | – |
-| [T1059.001](https://attack.mitre.org/techniques/T1059/001/) PowerShell | powershell | [rule](rules/windows/process_creation/proc_creation_win_powershell_encoded_cmd.yml) | ☐ | – |
-| [T1053.005](https://attack.mitre.org/techniques/T1053/005/) Scheduled Task | schtasks | [rule](rules/windows/process_creation/proc_creation_win_schtasks_suspicious_create.yml) | ☐ | – |
-| [T1047](https://attack.mitre.org/techniques/T1047/) WMI | wmic | [rule](rules/windows/process_creation/proc_creation_win_wmic_process_create.yml) | ☐ | – |
+| [T1047](https://attack.mitre.org/techniques/T1047/) WMI | wmic | ✅ detected (after fixing Sysmon logging) | ✅ detected | 0 |
+| [T1053.005](https://attack.mitre.org/techniques/T1053/005/) Scheduled Task | schtasks | ✅ detected, 3/3 task creations after v2 tuning | – | 0 |
+| [T1059.001](https://attack.mitre.org/techniques/T1059/001/) PowerShell | powershell | ✅ detected | – | 0 |
+| [T1105](https://attack.mitre.org/techniques/T1105/) Ingress Tool Transfer | certutil | 🛡️ blocked by Defender | ✅ detected | 0 |
+| [T1197](https://attack.mitre.org/techniques/T1197/) BITS Jobs | bitsadmin | ✅ detected | – | 0 |
+| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) Mshta | mshta | 🛡️ blocked by Defender | ✅ detected, 4 → 23 hits after v2 tuning | 0 |
+| [T1218.010](https://attack.mitre.org/techniques/T1218/010/) Regsvr32 | regsvr32 | ✅ local scriptlet detected (remote one blocked by Defender) | ✅ detected | 0 |
+| [T1218.011](https://attack.mitre.org/techniques/T1218/011/) Rundll32 | rundll32 | 🛡️ blocked by Defender | ✅ detected | 0 |
+
+"Blocked by Defender" means `Get-MpThreatDetection` showed Defender stopping the command at launch, so the LOLBin never ran and there was nothing for a detection rule to see. Raw output: [results.md](results.md) (my lab) and [results-public.md](results-public.md) (public data).
 
 ATT&CK coverage map: load [`navigator/coverage_layer.json`](navigator/coverage_layer.json) into the [ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/).
+
+## How it works
+
+- **Rules:** one Sigma rule per technique in [`rules/`](rules/). Each matches on both the image path and `OriginalFileName`, so renaming the binary doesn't get around it.
+- **Scoring:** [`scripts/evaluate.py`](scripts/evaluate.py) runs every rule against attack logs and normal-activity logs and reports what each rule caught and how many false alarms it raised.
+- **No SIEM needed:** [`scripts/sigma_lite.py`](scripts/sigma_lite.py) is a small Sigma evaluator I wrote. It reads `.evtx` files directly, plus Splunk's one-event-per-line XML format.
+- **Tested like code:** on every push, GitHub Actions lints the rules, runs regression tests built from real events in my lab, and checks that each rule still converts to Splunk SPL and Elastic queries.
+- **Inspecting misses:** [`scripts/inspect_log.py`](scripts/inspect_log.py) prints the process events in a log so I can compare what actually ran with what a rule expects.
+
+## The lab
+
+- **Where:** a Windows Server 2022 VM in Azure (Azure for Students). My MacBook Air has 8 GB of RAM and not enough disk for a local VM, and I didn't want to run attack tools on a school-managed laptop.
+- **Hardening:** RDP restricted to my IP only, a dedicated transfer folder instead of sharing my files with the VM, disk snapshots as restore points, and a budget alert in place of auto-shutdown, which my region didn't support.
+- **Telemetry:** Sysmon with the [sysmon-modular](https://github.com/olafhartong/sysmon-modular) balanced profile, plus one extra include rule so WMIC process creation gets logged.
+- **Attacks:** hand-picked [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) tests per technique, chosen to exercise each LOLBin without pulling in third-party offensive tools.
 
 ## Repository layout
 
 ```
 rules/                  Sigma rules (one per technique)
 scripts/
-  sigma_lite.py         Sigma evaluator that reads .evtx and .jsonl
-  evaluate.py           Scores all rules: detection rate + false positives
-  validate_rules.py     Linter for rule quality (UUIDs, ATT&CK tags, syntax...)
+  sigma_lite.py         Sigma evaluator (.evtx, .jsonl, Splunk XML .log)
+  evaluate.py           Scores all rules: detections + false positives
+  inspect_log.py        Prints the process events in a log
+  validate_rules.py     Lints rules (UUIDs, ATT&CK tags, syntax)
   build_navigator.py    Generates the ATT&CK Navigator coverage layer
   convert.sh            Converts rules to Splunk SPL and Elastic queries
+  fetch_public_data.sh  Downloads the Splunk attack_data Sysmon logs
   lab/                  PowerShell scripts that run inside the lab VM
-evtx/attack/            Sysmon logs from each attack simulation (T1105.evtx, ...)
-evtx/benign/            Sysmon logs of normal activity, for false-positive testing
-tests/                  Unit tests + regression fixtures for every rule
-docs/techniques/        One write-up per technique: telemetry, logic, evasions
-converted/              Generated SIEM queries
-navigator/              ATT&CK Navigator layer
+evtx/attack/            Sysmon logs from my attack runs
+evtx/benign/            Sysmon logs of normal activity
+tests/                  Unit tests + regression fixtures from real lab events
+docs/build-log.md       Every problem I hit and how I solved it
 ```
 
-## Reproduce the lab
+## Reproduce it
 
-You need a computer with 16 GB of RAM (8 GB works, slowly), about 60 GB of free disk, and Python 3.10+.
-
-> ⚠️ **Safety:** Atomic Red Team simulates real attacker behaviour. Run it **only inside a disposable VM** with snapshots. Never disable Defender or add exclusions on your everyday computer.
-
-### Phase 1: Build the VM
-
-1. Install a hypervisor. On a Windows or Intel host, use [VirtualBox](https://www.virtualbox.org/) or VMware Workstation Pro. On an Apple Silicon Mac (what I used), use VMware Fusion or UTM, both free for personal use.
-2. Install Windows 11 and create a VM with 4 GB RAM, 2 CPUs and 60 GB disk. On Intel/AMD, use the free **Windows 11 Enterprise evaluation**. On Apple Silicon, use **Windows 11 ARM64**. The setup script picks the ARM64 build of Sysmon automatically.
-3. Set its network to **NAT**. Install the guest additions so you can share a folder with your host.
-4. Take a snapshot called `clean`.
-
-### Phase 2: Install the tooling (inside the VM)
-
-Copy `scripts/lab/` into the VM, open PowerShell **as Administrator**, and run:
+Inside a **disposable** Windows VM (admin PowerShell):
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\Install-LabTools.ps1
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\scripts\lab\Install-LabTools.ps1                    # Sysmon + Atomic Red Team
+.\scripts\lab\Run-Atomics.ps1                         # attacks -> evtx\attack\
+.\scripts\lab\Capture-Baseline.ps1 -Label normal-use  # normal activity -> evtx\benign\
 ```
 
-This installs Sysmon with [sysmon-modular](https://github.com/olafhartong/sysmon-modular), turns on PowerShell script-block logging, and installs Atomic Red Team. Confirm Sysmon works by opening Event Viewer → *Applications and Services Logs → Microsoft → Windows → Sysmon → Operational* and looking for Event ID 1. Then take a snapshot called `tools-installed`.
-
-### Phase 3: Capture attack telemetry
-
-```powershell
-.\Run-Atomics.ps1
-```
-
-For each technique this clears the Sysmon log, runs the atomic tests, exports `evtx\attack\<Technique>.evtx`, and cleans up. Some atomics need internet access or fail on a given Windows build, which is expected. Note which ones ran in your technique write-ups.
-
-### Phase 4: Capture a benign baseline
-
-Revert to the `tools-installed` snapshot so no attack artifacts remain, then:
-
-```powershell
-.\Capture-Baseline.ps1 -Label normal-use
-```
-
-Use the VM like a normal person for 30–60 minutes: browse, install a couple of apps, run Windows Update, open Control Panel, create an ordinary scheduled task. More variety means a more honest false-positive number.
-
-### Phase 5: Evaluate and tune (on your host)
-
-Copy the `.evtx` files into this repo's `evtx/` folders, then:
+Then, on your host:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
 python scripts/evaluate.py --markdown results.md --json results.json
+bash scripts/fetch_public_data.sh
+python scripts/evaluate.py --attack evtx/public --markdown results-public.md --json results-public.json
 python scripts/build_navigator.py
 ```
 
-For any rule that **missed**, open its `.evtx` in Event Viewer, find the Event ID 1 record, and compare the real command line against the rule. For any **false positive**, the report prints the offending command lines. Tighten the rule or add a `filter_` selection, then re-run. Record the before and after counts in the technique write-up. Every time you fix something, copy the event into `tests/fixtures/` so CI guards against regressions.
+> ⚠️ Atomic Red Team simulates real attacker behaviour. Only run it in a VM you can throw away, never on a personal or work machine.
 
-### Phase 6: Try to evade your own rules
+## Limitations and next steps
 
-For each technique, attempt at least one bypass and document it in `docs/techniques/`:
-
-- Copy the binary and rename it (`copy C:\Windows\System32\certutil.exe C:\Users\Public\cu.exe`)
-- Change argument prefixes or casing (`/urlcache` vs `-URLCACHE`)
-- Use an abbreviated flag (`-ec` instead of `-EncodedCommand`)
-- Launch it from an unusual parent process
-
-If a bypass works, fix the rule, add the event to the fixtures, and note it in the write-up.
-
-### Phase 7: Convert to SIEM queries
-
-```bash
-bash scripts/convert.sh
-```
-
-This writes `converted/splunk.spl` and `converted/elastic.lucene`.
-
-## Running the checks locally
-
-```bash
-python scripts/validate_rules.py    # lint rules
-pytest -q                           # unit + regression tests
-python scripts/evaluate.py --strict --attack tests/fixtures/attack --benign tests/fixtures/benign
-```
-
-## Limitations
-
-- Command-line detection only sees what Sysmon Event ID 1 records. Process injection, or LOLBins invoked through COM without a new process, need other telemetry such as image loads or network connections.
-- The benign baseline comes from a single lab VM. Real enterprise environments have far more legitimate LOLBin use, so expect to tune further in production.
-- `sigma_lite.py` implements the subset of Sigma these rules use, not the full specification.
+- **Small baseline.** The balanced Sysmon profile only logs process starts it considers interesting, so my normal-use baseline had 15 process creations. A longer baseline with broader logging would give a stronger false-positive number.
+- **Command-line detection is fragile.** These rules key on command lines. An attacker who obfuscates arguments, or reaches the same functionality through COM without starting a new process, needs other telemetry such as image loads (Sysmon Event ID 7) and network connections (Event ID 3).
+- **Next:** systematically try to evade each rule (renamed binaries, alternate flags, unusual parent processes) in the lab, and add a rule for Defender's own detection events so prevented attacks still raise an alert.
 
 ## References
 
-- [MITRE ATT&CK](https://attack.mitre.org/)
-- [LOLBAS Project](https://lolbas-project.github.io/)
-- [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team)
-- [SigmaHQ rule repository](https://github.com/SigmaHQ/sigma)
-- [sysmon-modular](https://github.com/olafhartong/sysmon-modular)
+[MITRE ATT&CK](https://attack.mitre.org/) · [LOLBAS Project](https://lolbas-project.github.io/) · [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) · [SigmaHQ](https://github.com/SigmaHQ/sigma) · [sysmon-modular](https://github.com/olafhartong/sysmon-modular) · [Splunk attack_data](https://github.com/splunk/attack_data)
 
 ## License
 

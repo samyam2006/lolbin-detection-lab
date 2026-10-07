@@ -121,7 +121,7 @@
       ],
       "status": "detected",
       "attack_events": 24,
-      "true_positive_hits": 2,
+      "true_positive_hits": 3,
       "false_positive_hits": 0,
       "false_positive_samples": [],
       "cross_technique_hits": {}

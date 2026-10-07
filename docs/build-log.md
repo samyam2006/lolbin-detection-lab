@@ -125,6 +125,11 @@ A running record of the problems I hit while building this lab and how I solved 
 - *Impact on public data:* hits on the Splunk T1218.005 dataset went from 4 to 23. The extra hits are all attack activity: HTAs launched from a Downloads folder and a UNC share. Still 0 false positives on the baseline.
 - *Bonus:* Some of those hits were mshta **copied and renamed to `C:\Temp\notepad.exe`**. The rule still caught them because it also checks `OriginalFileName`, which comes from the binary's version resource and survives a rename. That's real-world evidence for the renamed-binary hardening, not just a synthetic test.
 
+**Scheduled-task rule missed a task that runs plain cmd.exe (v1 → v2)**
+- *Found:* The rule's "2 hits" both came from test T1053.005-1, which creates two tasks with `/tr "cmd.exe /c calc.exe"`. Test 2 created a task with `/TR C:\windows\system32\cmd.exe`, no `/c`, and v1 missed it, because it only looked for `cmd.exe /c`.
+- *Change:* v2 matches any task action that launches `cmd.exe`. This doesn't add a new class of false positives, since legitimate tasks that run batch files through `cmd.exe /c` already matched v1. Added the real event as a test fixture.
+- *Lesson:* "Detected" at the technique level can hide a missed variant. Check every test's events, not just whether the rule fired at least once.
+
 ### Day-to-day operations
 
 **RDP stopped working the next day (error 0x704)**

@@ -26,13 +26,21 @@ RANK = {"missed": 3, "noisy": 2, "untested": 1, "detected": 0}
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--results", type=Path, default=ROOT / "results.json")
+    ap.add_argument("--results", type=Path, nargs="+",
+                    default=[ROOT / "results.json", ROOT / "results-public.json"],
+                    help="one or more evaluate.py JSON reports; a rule counts as detected if any report detected it")
     ap.add_argument("--out", type=Path, default=ROOT / "navigator" / "coverage_layer.json")
     args = ap.parse_args()
 
-    by_id = {}
-    if args.results.exists():
-        by_id = {r["id"]: r for r in json.loads(args.results.read_text())["rules"]}
+    better = {"detected": 2, "missed": 1, "untested": 0}
+    by_id: dict = {}
+    for path in args.results:
+        if not path.exists():
+            continue
+        for r in json.loads(path.read_text())["rules"]:
+            cur = by_id.get(r["id"])
+            if cur is None or better[r["status"]] > better[cur["status"]]:
+                by_id[r["id"]] = r
 
     techniques: dict[str, dict] = {}
     for rule in load_rules(ROOT / "rules"):
