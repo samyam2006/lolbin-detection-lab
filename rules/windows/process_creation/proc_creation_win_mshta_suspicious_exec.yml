@@ -1,14 +1,18 @@
-title: Mshta Executing Inline Script or Remote HTA
+title: Mshta Executing Inline Script, Remote HTA, or HTA From a User-Writable Path
 id: 9908471f-189e-4347-b117-8abba4bdf00c
 status: experimental
 description: |
-  Detects mshta.exe running inline JavaScript/VBScript or loading an HTA from a URL.
+  Detects mshta.exe running inline JavaScript/VBScript, loading an HTA from a URL,
+  or running an .hta file from a folder any user can write to (AppData, Temp, Public).
   Mshta is a signed proxy that runs script outside the browser's security controls.
+  v2: added the user-writable .hta case after Atomic test T1218.005-3 dropped an HTA
+  into the Startup folder and ran it with a local path, which v1 would not have matched.
 references:
   - https://attack.mitre.org/techniques/T1218/005/
   - https://lolbas-project.github.io/lolbas/Binaries/Mshta/
 author: Samyam Shrestha
 date: 2026-10-06
+modified: 2026-10-07
 tags:
   - attack.defense-evasion
   - attack.t1218.005
@@ -19,13 +23,21 @@ detection:
   selection_img:
     - Image|endswith: '\mshta.exe'
     - OriginalFileName: 'MSHTA.EXE'
-  selection_cli:
+  selection_inline_or_remote:
     CommandLine|contains:
       - 'javascript:'
       - 'vbscript:'
       - 'http://'
       - 'https://'
-  condition: all of selection_*
+  selection_hta_ext:
+    CommandLine|contains: '.hta'
+  selection_hta_path:
+    CommandLine|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\Users\Public\'
+      - '\Downloads\'
+  condition: selection_img and (selection_inline_or_remote or (selection_hta_ext and selection_hta_path))
 falsepositives:
   - Very old line-of-business apps built on HTA launched from an intranet URL
 level: high

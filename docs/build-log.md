@@ -110,6 +110,21 @@ A running record of the problems I hit while building this lab and how I solved 
 - *Cause:* Events generated just before the clear were still being written when `wevtutil cl` ran.
 - *Fix:* Added short pauses before and after clearing the log in `Run-Atomics.ps1`.
 
+### False-positive baseline
+
+- *Method:* Cleared the Sysmon log, then used the VM normally: browsed with Edge, downloaded and installed 7-Zip, opened Control Panel, ran routine admin commands (`ipconfig /all`, `systeminfo`, `Get-Service`), and ran **legitimate** commands with four of the same LOLBins my rules watch: `certutil -hashfile`, `bitsadmin /list`, `wmic os get caption` and `schtasks /query`.
+- *Result:* **0 false positives** across 172 events (15 process creations). All four legitimate LOLBin commands were captured and none triggered a rule. So the rules separate, for example, `certutil` downloading a file from `certutil` hashing one.
+- *Limitation:* The baseline is small. The balanced Sysmon profile only logs process starts it considers interesting, so most routine activity (Edge child processes, installer steps) was never recorded. A longer baseline with broader process logging is a next step.
+- Added the real baseline events to `tests/fixtures/benign/` so CI keeps checking them on every push.
+
+### Tuning
+
+**mshta rule missed an HTA run from a local user folder (v1 → v2)**
+- *Found:* Atomic test T1218.005-3 used PowerShell to download an `.hta` into the user's **Startup** folder and run `mshta "<path>\Startup\T1218.005.hta"`. My v1 rule only matched `javascript:`, `vbscript:` or a URL, so it would have missed this local-path variant.
+- *Change:* v2 also matches mshta running an `.hta` from a user-writable path (`\AppData\`, `\Temp\`, `\Users\Public\`, `\Downloads\`). Added the event to the test fixtures.
+- *Impact on public data:* hits on the Splunk T1218.005 dataset went from 4 to 23. The extra hits are all attack activity: HTAs launched from a Downloads folder and a UNC share. Still 0 false positives on the baseline.
+- *Bonus:* Some of those hits were mshta **copied and renamed to `C:\Temp\notepad.exe`**. The rule still caught them because it also checks `OriginalFileName`, which comes from the binary's version resource and survives a rename. That's real-world evidence for the renamed-binary hardening, not just a synthetic test.
+
 ### Day-to-day operations
 
 **RDP stopped working the next day (error 0x704)**

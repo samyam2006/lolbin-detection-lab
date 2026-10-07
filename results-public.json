@@ -1,6 +1,6 @@
 {
   "generated": "2026-10-07",
-  "benign_events_scanned": 0,
+  "benign_events_scanned": 172,
   "attack_events_scanned": 43482,
   "techniques_with_data": [
     "T1047",
@@ -52,7 +52,7 @@
     },
     {
       "id": "9908471f-189e-4347-b117-8abba4bdf00c",
-      "title": "Mshta Executing Inline Script or Remote HTA",
+      "title": "Mshta Executing Inline Script, Remote HTA, or HTA From a User-Writable Path",
       "file": "rules/windows/process_creation/proc_creation_win_mshta_suspicious_exec.yml",
       "level": "high",
       "techniques": [
@@ -60,7 +60,7 @@
       ],
       "status": "detected",
       "attack_events": 17946,
-      "true_positive_hits": 4,
+      "true_positive_hits": 23,
       "false_positive_hits": 0,
       "false_positive_samples": [],
       "cross_technique_hits": {}

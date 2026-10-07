@@ -3,7 +3,7 @@
 _Generated 2026-10-07 by `scripts/evaluate.py`._
 
 - **Detection rate:** 5/5 tested techniques
-- **False positives:** 0 across 0 benign events
+- **False positives:** 0 across 172 benign events
 - **Attack events scanned:** 43,482
 
 | Technique | Rule | Level | Result | Attack hits | Benign FPs |
@@ -13,7 +13,7 @@ _Generated 2026-10-07 by `scripts/evaluate.py`._
 | [T1059.001](https://attack.mitre.org/techniques/T1059/001/) | [PowerShell Launched With Encoded Command](rules/windows/process_creation/proc_creation_win_powershell_encoded_cmd.yml) | medium | ⚪ no data | 0/0 | 0 |
 | [T1105](https://attack.mitre.org/techniques/T1105/) | [Certutil Used to Download a Remote File](rules/windows/process_creation/proc_creation_win_certutil_download.yml) | high | ✅ detected | 10/2288 | 0 |
 | [T1197](https://attack.mitre.org/techniques/T1197/) | [Bitsadmin Job Created for Download or Persistence](rules/windows/process_creation/proc_creation_win_bitsadmin_transfer.yml) | medium | ⚪ no data | 0/0 | 0 |
-| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) | [Mshta Executing Inline Script or Remote HTA](rules/windows/process_creation/proc_creation_win_mshta_suspicious_exec.yml) | high | ✅ detected | 4/17946 | 0 |
+| [T1218.005](https://attack.mitre.org/techniques/T1218/005/) | [Mshta Executing Inline Script, Remote HTA, or HTA From a User-Writable Path](rules/windows/process_creation/proc_creation_win_mshta_suspicious_exec.yml) | high | ✅ detected | 23/17946 | 0 |
 | [T1218.010](https://attack.mitre.org/techniques/T1218/010/) | [Regsvr32 Loading Scriptlet or Remote Content (Squiblydoo)](rules/windows/process_creation/proc_creation_win_regsvr32_squiblydoo.yml) | high | ✅ detected | 7/3314 | 0 |
 | [T1218.011](https://attack.mitre.org/techniques/T1218/011/) | [Rundll32 Proxy Execution of Script or DLL From User-Writable Path](rules/windows/process_creation/proc_creation_win_rundll32_proxy_exec.yml) | medium | ✅ detected | 2/13363 | 0 |
 
