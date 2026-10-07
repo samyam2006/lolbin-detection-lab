@@ -19,11 +19,15 @@ New-Item -ItemType Directory -Force -Path $work | Out-Null
 Write-Host '[1/4] Installing Sysmon' -ForegroundColor Cyan
 Invoke-WebRequest 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile "$work\Sysmon.zip" -UseBasicParsing
 Expand-Archive "$work\Sysmon.zip" -DestinationPath "$work\Sysmon" -Force
-# sysmon-modular ships merged configs as release assets. The "excludes-only" profile
-# logs every process creation except known noise; the default "balanced" profile
-# filtered out WMIC.exe in testing (see docs/build-log.md).
-Invoke-WebRequest 'https://github.com/olafhartong/sysmon-modular/releases/latest/download/sysmonconfig-excludes-only.xml' `
-    -OutFile "$work\sysmonconfig.xml" -UseBasicParsing
+# sysmon-modular ships merged configs as release assets. I use the "balanced" profile
+# plus one extra include: its WMIC rule matches OriginalFileName "wmic.exe", but WMIC's
+# version resource reports "wmic.exe.mui", so WMIC launches were silently not logged
+# (see docs/build-log.md). The "excludes-only" profile logged nothing at all in testing.
+Invoke-WebRequest 'https://github.com/olafhartong/sysmon-modular/releases/latest/download/sysmonconfig.xml' `
+    -OutFile "$work\sysmonconfig-balanced.xml" -UseBasicParsing
+$extra = '<RuleGroup name="lab-wmic" groupRelation="or"><ProcessCreate onmatch="include"><Image condition="end with">\WMIC.exe</Image></ProcessCreate></RuleGroup>'
+(Get-Content "$work\sysmonconfig-balanced.xml" -Raw) -replace '<EventFiltering>', "<EventFiltering>`n$extra" |
+    Set-Content "$work\sysmonconfig.xml" -Encoding UTF8
 # Windows on ARM (e.g. a VM on an Apple Silicon Mac) needs the ARM64 build.
 $sysmonExe = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'Sysmon64a.exe' } else { 'Sysmon64.exe' }
 if (-not (Test-Path "$work\Sysmon\$sysmonExe")) {

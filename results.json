@@ -1,7 +1,7 @@
 {
   "generated": "2026-10-07",
   "benign_events_scanned": 0,
-  "attack_events_scanned": 368,
+  "attack_events_scanned": 358,
   "techniques_with_data": [
     "T1047",
     "T1053.005",
@@ -15,8 +15,8 @@
   "summary": {
     "rules": 8,
     "tested": 8,
-    "detected": 4,
-    "missed": 4,
+    "detected": 5,
+    "missed": 3,
     "untested": 0,
     "total_false_positives": 0
   },
@@ -134,9 +134,9 @@
       "techniques": [
         "T1047"
       ],
-      "status": "missed",
-      "attack_events": 23,
-      "true_positive_hits": 0,
+      "status": "detected",
+      "attack_events": 13,
+      "true_positive_hits": 1,
       "false_positive_hits": 0,
       "false_positive_samples": [],
       "cross_technique_hits": {}

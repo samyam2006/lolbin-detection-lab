@@ -99,7 +99,11 @@ A running record of the problems I hit while building this lab and how I solved 
 
 **WMIC process creation not logged**
 - *Symptom:* `wmic os get caption` ran successfully, but no Sysmon Event ID 1 appeared for `WMIC.exe`, even after switching from sysmon-modular's "balanced" profile to "excludes-only".
-- *Status:* Still investigating. Neither config profile has an exclusion that mentions WMIC, so the cause is somewhere else.
+- *Clue:* `(Get-Item C:\Windows\System32\wbem\WMIC.exe).VersionInfo.OriginalFilename` returns **`wmic.exe.mui`**, not `wmic.exe`.
+- *Likely cause:* The balanced profile only logs WMIC through an include rule, `OriginalFileName is wmic.exe`. If Sysmon also reads `wmic.exe.mui`, that rule never matches, so every WMIC launch gets silently dropped.
+- *Second problem:* After switching to the "excludes-only" profile, Sysmon logged **no** process creations at all, not even `cmd.exe`, so I went back to balanced.
+- *Fix:* Balanced profile plus one extra include rule matching on the image path (`Image end with \WMIC.exe`), which doesn't depend on the version resource.
+- *Lesson:* Matching on `OriginalFileName` is great for catching renamed binaries, but it relies on what's in the PE version resource, and that isn't always the plain file name. Verify a config actually logs the binaries you care about. Don't assume it does because a rule mentions them.
 
 **Previous technique's events leaked into the next log**
 - *Symptom:* Each log started with the previous technique's export and cleanup commands, even though the script clears the Sysmon log between techniques.
