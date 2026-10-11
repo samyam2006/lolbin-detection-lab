@@ -1,7 +1,5 @@
 # LOLBin Detection Lab
 
-![Detection CI](https://github.com/samyam2006/lolbin-detection-lab/actions/workflows/detections.yml/badge.svg)
-
 I'm Samyam, a senior at Towson. I built this because I wanted to understand how attackers hide in normal Windows activity.
 
 A lot of real intrusions don't bring custom malware at all. They use tools that already ship with Windows, like certutil, mshta and rundll32, which are signed by Microsoft and run on normal machines all the time. Seeing one of them run doesn't tell you much. What I wanted to figure out was how to tell when one is being abused.
